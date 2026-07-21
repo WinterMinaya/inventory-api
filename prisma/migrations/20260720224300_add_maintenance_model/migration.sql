@@ -1,4 +1,6 @@
 -- CreateEnum
+
+
 CREATE TYPE "MaintenanceStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
 
 -- CreateTable
