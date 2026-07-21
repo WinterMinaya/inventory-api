@@ -6,6 +6,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CrearEquipoDto } from './dto/crear-equipo.dto';
 import { ActualizarEquipoDto } from './dto/actualizar-equipo.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
+import { paginate, getPaginationParams } from '../common/helpers/pagination.helper';
 
 @Injectable()
 export class ProductsService {
@@ -32,31 +34,56 @@ export class ProductsService {
         categoryId: crearEquipoDto.categoryId,
       },
       include: {
-        category: true,
+        category: {
+          select: { id: true, name: true },
+        },
       },
     });
   }
 
-  async findAll() {
-    return await this.prisma.product.findMany({
-      orderBy: { name: 'asc' },
-      include: {
-        category: true,
-        _count: {
-          select: { movements: true },
+  async findAll(paginationDto: PaginationDto) {
+    const { skip, take } = getPaginationParams(paginationDto);
+
+    const [data, total] = await Promise.all([
+      this.prisma.product.findMany({
+        skip,
+        take,
+        orderBy: { name: 'asc' },
+        include: {
+          category: {
+            select: { id: true, name: true },
+          },
+          _count: {
+            select: { movements: true, maintenances: true },
+          },
         },
-      },
-    });
+      }),
+      this.prisma.product.count(),
+    ]);
+
+    return paginate(data, total, paginationDto);
   }
 
   async findOne(id: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
-        category: true,
+        category: {
+          select: { id: true, name: true },
+        },
         movements: {
           orderBy: { createdAt: 'desc' },
           take: 10,
+          select: {
+            id: true,
+            type: true,
+            quantity: true,
+            reason: true,
+            createdAt: true,
+            user: {
+              select: { id: true, name: true },
+            },
+          },
         },
       },
     });
@@ -87,7 +114,9 @@ export class ProductsService {
       where: { id },
       data: actualizarEquipoDto,
       include: {
-        category: true,
+        category: {
+          select: { id: true, name: true },
+        },
       },
     });
   }
@@ -99,9 +128,13 @@ export class ProductsService {
       where: { productId: id },
     });
 
-    if (movementsCount > 0) {
+    const maintenancesCount = await this.prisma.maintenance.count({
+      where: { productId: id },
+    });
+
+    if (movementsCount > 0 || maintenancesCount > 0) {
       throw new ConflictException(
-        `No se puede eliminar el equipo porque tiene ${movementsCount} movimiento(s) de inventario asociado(s)`,
+        `No se puede eliminar el equipo porque tiene ${movementsCount} movimiento(s) y ${maintenancesCount} mantenimiento(s) asociado(s)`,
       );
     }
 
@@ -110,15 +143,26 @@ export class ProductsService {
     });
   }
 
-  async checkLowStock() {
-    const products = await this.prisma.product.findMany({
-      include: {
-        category: true,
-      },
+  async checkLowStock(paginationDto: PaginationDto) {
+    // Obtener todos los productos con stock bajo (stock <= minStock)
+    const allProducts = await this.prisma.product.findMany({
       orderBy: { stock: 'asc' },
+      include: {
+        category: {
+          select: { id: true, name: true },
+        },
+      },
     });
 
-    return products.filter((product) => product.stock <= product.minStock);
+    const lowStockProducts = allProducts.filter(
+      (product) => product.stock <= product.minStock,
+    );
+
+    const { skip, take } = getPaginationParams(paginationDto);
+    const total = lowStockProducts.length;
+    const paginatedData = lowStockProducts.slice(skip, skip + take);
+
+    return paginate(paginatedData, total, paginationDto);
   }
 }
 

@@ -7,11 +7,13 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CrearEquipoDto } from './dto/crear-equipo.dto';
 import { ActualizarEquipoDto } from './dto/actualizar-equipo.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Inventario de Equipos')
 @Controller('inventario')
@@ -25,15 +27,19 @@ export class ProductsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Obtener todos los equipos' })
-  async findAll() {
-    return await this.productsService.findAll();
+  @ApiOperation({ summary: 'Obtener todos los equipos (paginado)' })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  async findAll(@Query() paginationDto: PaginationDto) {
+    return await this.productsService.findAll(paginationDto);
   }
 
   @Get('low-stock')
   @ApiOperation({ summary: 'Obtener equipos con stock bajo' })
-  async findLowStock() {
-    return await this.productsService.checkLowStock();
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  async findLowStock(@Query() paginationDto: PaginationDto) {
+    return await this.productsService.checkLowStock(paginationDto);
   }
 
   @Get(':id')
