@@ -11,6 +11,7 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
 enum MovementType {
   IN
   OUT
@@ -23,7 +24,8 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  movements InventoryMovement[]
+  movements    InventoryMovement[]
+  maintenances Maintenance[]
 }
 
 model Category {
@@ -47,7 +49,8 @@ model Product {
   categoryId Int
   category   Category @relation(fields: [categoryId], references: [id])
 
-  movements InventoryMovement[]
+  movements  InventoryMovement[]
+  maintenances Maintenance[]
 }
 
 model InventoryMovement {
@@ -56,6 +59,30 @@ model InventoryMovement {
   quantity  Int
   reason    String?
   createdAt DateTime     @default(now())
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
+
+enum MaintenanceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Maintenance {
+  id          Int               @id @default(autoincrement())
+  description String
+  type        String
+  status      MaintenanceStatus @default(PENDING)
+  cost        Decimal           @default(0)
+  technician  String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   productId Int
   product   Product @relation(fields: [productId], references: [id])
