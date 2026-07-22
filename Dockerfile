@@ -26,9 +26,6 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Instalar netcat para healthcheck en entrypoint
-RUN apk add --no-cache netcat-openbsd
-
 # Copiar node_modules de la etapa builder
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
