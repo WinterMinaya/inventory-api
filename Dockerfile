@@ -17,11 +17,14 @@ ARG DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
 ENV DATABASE_URL=$DATABASE_URL
 RUN npx prisma generate
 
-# Construir la aplicación y verificar
-RUN npm run build && ls -la dist/
+# Construir la aplicación
+RUN npx nest build
+
+# Debug: listar estructura de dist para confirmar ruta
+RUN find dist/ -name "*.js" -type f | sort
 
 # Exponer puerto
 EXPOSE 3000
 
-# Comando de inicio con debugging
-CMD ls -la /app/dist/ && echo "---" && npx prisma migrate deploy --schema=./prisma/schema.prisma 2>&1 || echo "Migraciones OK" && echo "---" && node dist/main
+# Comando de inicio
+CMD ["node", "dist/src/main.js"]
