@@ -22,6 +22,9 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
+# Instalar netcat para healthcheck en entrypoint
+RUN apk add --no-cache netcat-openbsd
+
 # Copiar node_modules de la etapa builder
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
@@ -30,9 +33,13 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma.config.ts ./
 
+# Copiar entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Exponer puerto
 EXPOSE 3000
 
-# Comando de inicio: ejecutar migraciones y luego iniciar app
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+# Comando de inicio usando entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
 

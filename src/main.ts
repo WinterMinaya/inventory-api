@@ -41,11 +41,20 @@ async function bootstrap() {
     }),
   );
 
+  // Iniciar servidor
+  const puerto = process.env.PORT || 3000;
+
   // Configuración de Swagger
+  const swaggerServerUrl =
+    process.env.RENDER_EXTERNAL_URL ||
+    process.env.RENDER_URL ||
+    `http://localhost:${puerto}`;
+
   const config = new DocumentBuilder()
     .setTitle('API Gestión de Inventarios y Mantenimientos')
     .setDescription('Examen Final - API RESTful Segura y Escalable')
     .setVersion('1.0.0')
+    .addServer(swaggerServerUrl)
     .addServer('http://localhost:3000')
     .addBearerAuth()
     .build();
@@ -62,8 +71,6 @@ async function bootstrap() {
     customCss: '.swagger-ui .topbar { display: none }',
   });
 
-  // Iniciar servidor
-  const puerto = process.env.PORT || 3000;
   await app.listen(puerto, '0.0.0.0');
 
   logger.log(`Servidor corriendo en: http://localhost:${puerto}`);
