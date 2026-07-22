@@ -13,8 +13,12 @@ RUN npm ci
 # Copiar código fuente
 COPY . .
 
-# Generar Prisma Client y construir
+# Generar Prisma Client con placeholder DATABASE_URL (solo para generar)
+ARG DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
+ENV DATABASE_URL=$DATABASE_URL
 RUN npx prisma generate
+
+# Construir la aplicación
 RUN npm run build
 
 # Etapa 2: Producción
@@ -42,4 +46,3 @@ EXPOSE 3000
 
 # Comando de inicio usando entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
-
